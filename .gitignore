@@ -1,0 +1,95 @@
+# --- Secrets (never commit) ---
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.p12
+*.p8
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+
+# --- Videos, datasets, model weights (too big / personal data) ---
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+*.mkv
+*.webm
+data/
+datasets/
+footage/
+raw/
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.safetensors
+*.tflite
+*.mlmodel
+*.mlpackage/
+wandb/
+runs/
+mlruns/
+
+# --- Node / Expo / Next.js ---
+node_modules/
+.expo/
+.next/
+out/
+dist/
+build/
+web-build/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Native builds ---
+ios/Pods/
+android/.gradle/
+android/app/build/
+*.ipa
+*.apk
+*.aab
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# --- OS / editors ---
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Claude Code personal settings ---
+.claude/settings.local.json
+
+# Interview notes (personal data, never commit)
+research/interviews/
+
+# --- Private: business plan, research, AI notes (stay on this Mac, never pushed) ---
+initial_plan.md
+Badminton_app.md
+gemini_ml_training_plan.md
+Research_report.md
+PROGRESS.md
+SECURITY.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.env.example
+research/
+docs/
+.claude/

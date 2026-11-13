@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booth Operator</title>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --text:#141a21; --muted:#5f6b7a; --accent:#0a7f53; --danger:#b42318; --line:#dde2e8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  main { max-width:900px; margin:0 auto; padding:24px 16px; }
+  h1 { font-size:24px; margin:0 0 4px; } h2 { font-size:18px; margin:28px 0 8px; }
+  p.hint { color:var(--muted); margin:0 0 16px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:10px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .speed { font-size:28px; font-weight:800; min-width:160px; font-variant-numeric:tabular-nums; }
+  .meta { color:var(--muted); font-size:13px; }
+  input[type=text] { font-size:18px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; width:220px; }
+  label.consent { display:flex; gap:8px; align-items:flex-start; max-width:520px; font-size:14px; margin-top:10px; }
+  button { font-size:16px; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.danger { color:var(--danger); }
+  .msg { font-size:14px; margin-top:8px; color:var(--danger); }
+  .ok { color:var(--accent); }
+  table { width:100%; border-collapse:collapse; background:var(--panel); }
+  td { padding:8px; border-bottom:1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Booth operator</h1>
+  <p class="hint">New results from <code>speed.py</code> appear here. Ask the player for a nickname (no full names) and whether it may be shown on the board. Without consent the board shows "Player N".</p>
+  <div id="flash" class="msg ok"></div>
+  <h2>New results</h2>
+  <div id="pending"><p class="hint">Waiting for the next smash…</p></div>
+  <h2>On the board</h2>
+  <table><tbody id="entries"></tbody></table>
+</main>
+<script>
+  let shownIds = "";
+  const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+  async function post(url, body) {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "failed");
+    return j;
+  }
+  function pendingCard(p) {
+    const nick = el("input", { type: "text", placeholder: "Nickname", maxLength: 20, autocomplete: "off" });
+    const consent = el("input", { type: "checkbox" });
+    const msg = el("div", { className: "msg" });
+    const publish = el("button", { className: "primary", textContent: "Add to board" });
+    const discard = el("button", { className: "danger", textContent: "Discard" });
+    publish.onclick = async () => {
+      try {
+        const r = await post("/api/publish", { id: p.id, nickname: nick.value, consent: consent.checked });
+        flash(`Added as "${r.label}"`);
+        load(true);
+      } catch (e) { msg.textContent = e.message; }
+    };
+    discard.onclick = async () => { if (confirm("Discard this result?")) { await post("/api/discard", { id: p.id }); load(true); } };
+    const extra = [p.method === "manual" ? "manual clicks" : "automatic", p.shuttle, p.provisional_drag ? "nylon drag not measured yet" : ""].filter(Boolean).join(" · ");
+    return el("div", { className: "card" },
+      el("div", { className: "row" },
+        el("div", { className: "speed", textContent: `${Math.round(p.speed_kmh)} ± ${Math.round(p.margin_kmh)} km/h` }),
+        nick, publish, discard),
+      el("label", { className: "consent" }, consent,
+        el("span", { textContent: "The player agrees that this nickname is shown on the public board (a parent or guardian agrees if the player is under 16)." })),
+      el("div", { className: "meta", textContent: `${extra} · ${p.created}` }), msg);
+  }
+  function flash(t) { const f = document.getElementById("flash"); f.textContent = t; setTimeout(() => f.textContent = "", 4000); }
+  async function load(force) {
+    const [pend, ents] = await Promise.all([fetch("/api/pending").then(r => r.json()), fetch("/api/entries").then(r => r.json())]);
+    const ids = pend.pending.map(p => p.id).join(",");
+    if (force || ids !== shownIds) {  // don't wipe a nickname the operator is typing
+      shownIds = ids;
+      const box = document.getElementById("pending");
+      box.replaceChildren(...(pend.pending.length ? pend.pending.map(pendingCard) : [el("p", { className: "hint", textContent: "Waiting for the next smash…" })]));
+    }
+    document.getElementById("entries").replaceChildren(...ents.entries.map(e => {
+      const rm = el("button", { className: "danger", textContent: "Remove" });
+      rm.onclick = async () => { if (confirm(`Remove ${e.label} from the board?`)) { await post("/api/remove", { id: e.id }); load(true); } };
+      return el("tr", {}, el("td", { textContent: e.label }), el("td", { textContent: `${Math.round(e.speed_kmh)} ± ${Math.round(e.margin_kmh)} km/h` }),
+        el("td", { className: "meta", textContent: e.method }), el("td", {}, rm));
+    }));
+  }
+  load(true);
+  setInterval(() => load(false).catch(() => {}), 3000);
+</script>
+</body>
+</html>

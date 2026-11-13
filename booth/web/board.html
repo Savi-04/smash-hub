@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smash Speed Board</title>
+<style>
+  :root { --bg:#0b0f14; --panel:#141b24; --text:#f2f5f8; --muted:#8b98a8; --accent:#3ddc97; --gold:#ffcf4d; --line:#243041; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system, "Helvetica Neue", Arial, sans-serif; }
+  main { max-width:1200px; margin:0 auto; padding:3vh 4vw; }
+  header { display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap; }
+  h1 { font-size:clamp(28px, 4.5vw, 64px); margin:0; letter-spacing:-0.02em; }
+  .beta { color:var(--gold); border:2px solid var(--gold); border-radius:8px; padding:4px 10px; font-weight:700; font-size:clamp(14px,1.6vw,22px); }
+  .latest { margin:3vh 0; background:var(--panel); border-radius:16px; padding:2.5vh 3vw; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
+  .latest .who { font-size:clamp(20px, 3vw, 40px); color:var(--muted); }
+  .latest .who b { color:var(--text); }
+  .latest .kmh { font-size:clamp(48px, 9vw, 140px); font-weight:800; color:var(--accent); font-variant-numeric:tabular-nums; line-height:1; }
+  .unit { font-size:0.35em; color:var(--muted); font-weight:600; }
+  .pm { font-size:0.3em; color:var(--muted); font-weight:500; }
+  table { width:100%; border-collapse:collapse; font-size:clamp(18px, 2.6vw, 36px); }
+  td { padding:1.2vh 0.8vw; border-bottom:1px solid var(--line); }
+  td.rank { width:3ch; color:var(--muted); font-weight:700; }
+  td.speed { text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
+  tr:first-child td.rank, tr:first-child td.speed { color:var(--gold); }
+  .tag { font-size:0.55em; color:var(--muted); margin-left:8px; }
+  footer { margin-top:3vh; color:var(--muted); font-size:clamp(12px,1.4vw,18px); }
+  .empty { color:var(--muted); font-size:clamp(18px,2.4vw,32px); padding:4vh 0; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1 id="title">Smash Speed</h1><span class="beta">BETA</span></header>
+  <section class="latest" id="latest" hidden>
+    <div class="who">Latest: <b id="latestName"></b></div>
+    <div class="kmh"><span id="latestKmh"></span><span class="unit"> km/h</span> <span class="pm" id="latestPm"></span></div>
+  </section>
+  <table><tbody id="rows"></tbody></table>
+  <div class="empty" id="empty">No smashes yet. Step up!</div>
+  <footer>Beta: speeds are measured with one phone at 240 fps and have not yet been checked against a radar gun. ± shows the measurement margin. Nicknames only, shown with the player's consent.</footer>
+</main>
+<script>
+  // Everything is inserted with textContent: nicknames are never parsed as HTML.
+  function cell(text, cls) { const td = document.createElement("td"); td.textContent = text; if (cls) td.className = cls; return td; }
+  async function refresh() {
+    try {
+      const r = await fetch("/api/board", { cache: "no-store" });
+      const b = await r.json();
+      document.getElementById("title").textContent = b.event;
+      document.title = b.event;
+      const rows = document.getElementById("rows");
+      rows.replaceChildren(...b.ranking.map((e, i) => {
+        const tr = document.createElement("tr");
+        const name = cell(e.name);
+        if (e.method === "manual") { const s = document.createElement("span"); s.className = "tag"; s.textContent = "manual"; name.appendChild(s); }
+        tr.append(cell(String(i + 1), "rank"), name, cell(`${Math.round(e.speed_kmh)} ± ${Math.round(e.margin_kmh)} km/h`, "speed"));
+        return tr;
+      }));
+      document.getElementById("empty").hidden = b.ranking.length > 0;
+      const l = b.latest;
+      document.getElementById("latest").hidden = !l;
+      if (l) {
+        document.getElementById("latestName").textContent = l.name;
+        document.getElementById("latestKmh").textContent = Math.round(l.speed_kmh);
+        document.getElementById("latestPm").textContent = `± ${Math.round(l.margin_kmh)}`;
+      }
+    } catch (e) { /* server restarting: keep the last board on screen */ }
+  }
+  refresh();
+  setInterval(refresh, 3000);
+</script>
+</body>
+</html>

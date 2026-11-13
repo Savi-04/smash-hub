@@ -1,0 +1,7 @@
+# Pinned. Licences checked on PyPI 2026-10-31 (all permissive, no AGPL).
+numpy==2.5.4            # BSD-3-Clause
+opencv-python==4.14.0.94  # Apache-2.0 (ArUco is in the main package since 4.7)
+scipy==1.18.1           # BSD-3-Clause
+pillow==13.0.0          # MIT-CMU (writes the mat PDF)
+pytest==9.1.1           # MIT (tests only)
+segno==1.6.6            # BSD-3-Clause (QR code for opening the phone app; no dependencies)

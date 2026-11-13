@@ -1,6 +1,5 @@
 .env
 .env.*
-!.env.example
 secrets/
 *.pem
 *.key
@@ -68,19 +67,3 @@ venv/
 !.vscode/extensions.json
 
 .claude/settings.local.json
-
-research/interviews/
-
-initial_plan.md
-Badminton_app.md
-gemini_ml_training_plan.md
-Research_report.md
-PROGRESS.md
-SECURITY.md
-AGENTS.md
-CLAUDE.md
-GEMINI.md
-.env.example
-research/
-docs/
-.claude/
